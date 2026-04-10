@@ -1,0 +1,39 @@
+# Claude Code local files
+**/CLAUDE.local.md
+**/.claude/settings.local.json
+
+# Build outputs
+/build/
+app/build/
+**/build/
+
+# Gradle
+.gradle/
+**/.gradle/
+local.properties
+gradle.properties.local
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Generated
+gen/
+generated/
+
+# Keystore
+*.jks
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db
