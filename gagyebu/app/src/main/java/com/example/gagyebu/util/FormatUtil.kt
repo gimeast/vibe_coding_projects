@@ -23,8 +23,16 @@ object FormatUtil {
                 val decimal = (abs % 100_000_000L) / 10_000_000L
                 if (decimal == 0L) "${uk}억" else "${uk}.${decimal}억"
             }
-            abs >= 10_000L -> "${abs / 10_000L}만"
-            abs >= 1_000L -> "${abs / 1_000L}k"
+            abs >= 10_000L -> {
+                val man = abs / 10_000L
+                val decimal = (abs % 10_000L) / 1_000L
+                if (decimal == 0L) "${man}만" else "${man}.${decimal}만"
+            }
+            abs >= 1_000L -> {
+                val chun = abs / 1_000L
+                val decimal = (abs % 1_000L) / 100L
+                if (decimal == 0L) "${chun}천" else "${chun}.${decimal}천"
+            }
             else -> abs.toString()
         }
     }
@@ -37,7 +45,16 @@ object FormatUtil {
                 val decimal = (abs % 100_000_000L) / 10_000_000L
                 if (decimal == 0L) "${uk}억" else "${uk}.${decimal}억"
             }
-            abs >= 10_000L -> "${numberFormat.format(abs / 10_000L)}만"
+            abs >= 10_000L -> {
+                val man = abs / 10_000L
+                val decimal = (abs % 10_000L) / 1_000L
+                if (decimal == 0L) "${man}만" else "${man}.${decimal}만"
+            }
+            abs >= 1_000L -> {
+                val chun = abs / 1_000L
+                val decimal = (abs % 1_000L) / 100L
+                if (decimal == 0L) "${chun}천" else "${chun}.${decimal}천"
+            }
             else -> formatAmount(abs)
         }
     }
