@@ -139,6 +139,7 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
                 _selectedCategory.value = null
                 _memo.value = ""
                 _photoUri.value = ""
+                originalPhotoUri = ""
                 _savedCount.value++
             } else {
                 _saveSuccess.emit(Unit)
