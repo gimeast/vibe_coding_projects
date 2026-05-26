@@ -76,6 +76,8 @@ fun AddTransactionScreen(
     val categories by viewModel.categories.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val fieldError by viewModel.fieldError.collectAsState()
+    val continuousMode by viewModel.continuousMode.collectAsState()
+    val savedCount by viewModel.savedCount.collectAsState()
 
     val amountBivr = remember { BringIntoViewRequester() }
     val categoryBivr = remember { BringIntoViewRequester() }
@@ -117,22 +119,57 @@ fun AddTransactionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (transactionId != -1L) "내역 수정" else "내역 추가") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.Close, "닫기")
-                    }
-                },
-                actions = {
-                    TextButton(onClick = viewModel::save) {
-                        Text("저장", color = LocalAppColors.current.primary, fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            Column {
+                TopAppBar(
+                    title = { Text(if (transactionId != -1L) "내역 수정" else "내역 추가") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.Close, "닫기")
+                        }
+                    },
+                    actions = {
+                        if (transactionId == -1L) {
+                            Text(
+                                "연속",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (continuousMode) LocalAppColors.current.primary
+                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            )
+                            Switch(
+                                checked = continuousMode,
+                                onCheckedChange = viewModel::setContinuousMode,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = LocalAppColors.current.primary
+                                )
+                            )
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        TextButton(onClick = viewModel::save) {
+                            Text("저장", color = LocalAppColors.current.primary, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
-            )
+                if (continuousMode && savedCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(IncomeGreen)
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Text(
+                            "✓ ${savedCount}건 저장됨",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
