@@ -34,6 +34,12 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
     private val _photoUri = MutableStateFlow("")
     val photoUri: StateFlow<String> = _photoUri.asStateFlow()
 
+    private val _continuousMode = MutableStateFlow(false)
+    val continuousMode: StateFlow<Boolean> = _continuousMode.asStateFlow()
+
+    private val _savedCount = MutableStateFlow(0)
+    val savedCount: StateFlow<Int> = _savedCount.asStateFlow()
+
     private val _date = MutableStateFlow(LocalDate.now())
     val date: StateFlow<LocalDate> = _date.asStateFlow()
 
@@ -90,6 +96,11 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
     fun setDate(d: LocalDate) { _date.value = d }
     fun clearError() { _errorMessage.value = null; _fieldError.value = null }
 
+    fun setContinuousMode(enabled: Boolean) {
+        _continuousMode.value = enabled
+        if (!enabled) _savedCount.value = 0
+    }
+
     fun save() {
         val amountLong = _amount.value.toLongOrNull()
         if (amountLong == null || amountLong <= 0) {
@@ -123,7 +134,15 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
                 time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
             )
             repository.insertTransaction(transaction)
-            _saveSuccess.emit(Unit)
+            if (_continuousMode.value) {
+                _amount.value = ""
+                _selectedCategory.value = null
+                _memo.value = ""
+                _photoUri.value = ""
+                _savedCount.value++
+            } else {
+                _saveSuccess.emit(Unit)
+            }
         }
     }
 
