@@ -77,7 +77,6 @@ fun AddTransactionScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val fieldError by viewModel.fieldError.collectAsState()
     val continuousMode by viewModel.continuousMode.collectAsState()
-    val savedCount by viewModel.savedCount.collectAsState()
 
     val amountBivr = remember { BringIntoViewRequester() }
     val categoryBivr = remember { BringIntoViewRequester() }
@@ -105,6 +104,19 @@ fun AddTransactionScreen(
         }
     }
 
+    val scrollState = rememberScrollState()
+
+    // 연속 저장 토스트 1.5초 후 서서히 사라짐 + 상단 스크롤
+    var visibleSavedToast by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        viewModel.savedToast.collect { msg ->
+            scrollState.animateScrollTo(0)
+            visibleSavedToast = msg
+            delay(1500)
+            visibleSavedToast = null
+        }
+    }
+
     var showDatePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -119,57 +131,41 @@ fun AddTransactionScreen(
 
     Scaffold(
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(if (transactionId != -1L) "내역 수정" else "내역 추가") },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.Close, "닫기")
-                        }
-                    },
-                    actions = {
-                        if (transactionId == -1L) {
-                            Text(
-                                "연속",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (continuousMode) LocalAppColors.current.primary
-                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                            )
-                            Switch(
-                                checked = continuousMode,
-                                onCheckedChange = viewModel::setContinuousMode,
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = LocalAppColors.current.primary
-                                )
-                            )
-                            Spacer(Modifier.width(4.dp))
-                        }
-                        TextButton(onClick = viewModel::save) {
-                            Text("저장", color = LocalAppColors.current.primary, fontWeight = FontWeight.Bold)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
-                )
-                if (continuousMode && savedCount > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(IncomeGreen)
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        Text(
-                            "✓ ${savedCount}건 저장됨",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
+            TopAppBar(
+                title = { Text(if (transactionId != -1L) "내역 수정" else "내역 추가") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.Close, "닫기")
                     }
-                }
-            }
+                },
+                actions = {
+                    if (transactionId == -1L) {
+                        Text(
+                            "연속",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (continuousMode) LocalAppColors.current.primary
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Switch(
+                            checked = continuousMode,
+                            onCheckedChange = viewModel::setContinuousMode,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = LocalAppColors.current.primary
+                            )
+                        )
+                        Spacer(Modifier.width(4.dp))
+                    }
+                    TextButton(onClick = viewModel::save) {
+                        Text("저장", color = LocalAppColors.current.primary, fontWeight = FontWeight.Bold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -178,7 +174,7 @@ fun AddTransactionScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .imePadding()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -202,6 +198,25 @@ fun AddTransactionScreen(
                     color = IncomeGreen,
                     modifier = Modifier.weight(1f)
                 ) { viewModel.setType(TransactionType.INCOME) }
+            }
+
+            // Date
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.clickable { showDatePicker = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("날짜", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        Text(FormatUtil.formatDateFull(FormatUtil.formatDate(date)), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    }
+                    Icon(Icons.Default.CalendarMonth, "날짜선택", tint = LocalAppColors.current.primary)
+                }
             }
 
             // Amount input
@@ -242,25 +257,6 @@ fun AddTransactionScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
-            }
-
-            // Date
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.clickable { showDatePicker = true }
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("날짜", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-                        Text(FormatUtil.formatDateFull(FormatUtil.formatDate(date)), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                    }
-                    Icon(Icons.Default.CalendarMonth, "날짜선택", tint = LocalAppColors.current.primary)
                 }
             }
 
@@ -384,6 +380,19 @@ fun AddTransactionScreen(
             containerColor = ExpenseRed,
             contentColor = Color.White
         ) { Text(visibleError ?: "") }
+    }
+
+    // 연속 저장 토스트 - 1.5초 표시 후 서서히 사라짐
+    AnimatedVisibility(
+        visible = visibleSavedToast != null,
+        enter = fadeIn(tween(200)),
+        exit = fadeOut(tween(600))
+    ) {
+        Snackbar(
+            modifier = Modifier.padding(16.dp),
+            containerColor = IncomeGreen,
+            contentColor = Color.White
+        ) { Text(visibleSavedToast ?: "") }
     }
 
     // Date picker

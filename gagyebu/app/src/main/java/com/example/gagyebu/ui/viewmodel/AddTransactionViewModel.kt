@@ -37,8 +37,10 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
     private val _continuousMode = MutableStateFlow(false)
     val continuousMode: StateFlow<Boolean> = _continuousMode.asStateFlow()
 
-    private val _savedCount = MutableStateFlow(0)
-    val savedCount: StateFlow<Int> = _savedCount.asStateFlow()
+    private var savedCountInternal = 0
+
+    private val _savedToast = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val savedToast = _savedToast.asSharedFlow()
 
     private val _date = MutableStateFlow(LocalDate.now())
     val date: StateFlow<LocalDate> = _date.asStateFlow()
@@ -86,6 +88,8 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
             _photoUri.value = ""
             _date.value = LocalDate.now()
         }
+        _continuousMode.value = false
+        savedCountInternal = 0
     }
 
     fun setType(t: TransactionType) { _type.value = t; _selectedCategory.value = null }
@@ -98,7 +102,7 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
 
     fun setContinuousMode(enabled: Boolean) {
         _continuousMode.value = enabled
-        if (!enabled) _savedCount.value = 0
+        if (!enabled) savedCountInternal = 0
     }
 
     fun save() {
@@ -140,7 +144,8 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
                 _memo.value = ""
                 _photoUri.value = ""
                 originalPhotoUri = ""
-                _savedCount.value++
+                savedCountInternal++
+                _savedToast.tryEmit("${savedCountInternal}건 저장됨")
             } else {
                 _saveSuccess.emit(Unit)
             }
