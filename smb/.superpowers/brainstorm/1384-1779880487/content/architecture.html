@@ -1,0 +1,82 @@
+<h2>아키텍처 선택</h2>
+<p class="subtitle">백엔드와 프론트엔드를 어떻게 구성할까요?</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <div class="label">A — 권장</div>
+      <h3>React (Vite) + Express 분리형</h3>
+      <div class="mockup" style="margin: 12px 0;">
+        <div class="mockup-header">구조 미리보기</div>
+        <div class="mockup-body" style="font-family: monospace; font-size: 12px; line-height: 1.8;">
+          <div style="color: #60a5fa;">📁 stock-news-app/</div>
+          <div style="padding-left: 16px; color: #86efac;">📁 client/  ← Vite + React</div>
+          <div style="padding-left: 32px; color: #d1d5db;">src/ components/ App.jsx</div>
+          <div style="padding-left: 16px; color: #fbbf24;">📁 server/  ← Express API</div>
+          <div style="padding-left: 32px; color: #d1d5db;">api/ utils/ index.js</div>
+          <div style="padding-left: 16px; color: #f87171;">📁 reports/ ← PDF 저장</div>
+          <div style="padding-left: 16px; color: #d1d5db;">package.json, .env</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>장점</h4>
+          <ul>
+            <li>명세서 구조와 정확히 일치</li>
+            <li>백엔드/프론트엔드 완전 분리</li>
+            <li>node-cron, puppeteer 등 Node.js 네이티브 기능 자유롭게 사용</li>
+            <li>Ollama, DART API 연동 코드가 서버에서만 실행</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>단점</h4>
+          <ul>
+            <li>개발 서버 2개 실행 필요</li>
+            <li>CORS 설정 필요</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <div class="label">B</div>
+      <h3>Next.js 올인원 (풀스택)</h3>
+      <div class="mockup" style="margin: 12px 0;">
+        <div class="mockup-header">구조 미리보기</div>
+        <div class="mockup-body" style="font-family: monospace; font-size: 12px; line-height: 1.8;">
+          <div style="color: #60a5fa;">📁 stock-news-app/</div>
+          <div style="padding-left: 16px; color: #86efac;">📁 app/</div>
+          <div style="padding-left: 32px; color: #d1d5db;">page.tsx  layout.tsx</div>
+          <div style="padding-left: 16px; color: #fbbf24;">📁 app/api/</div>
+          <div style="padding-left: 32px; color: #d1d5db;">stocks/ dart/ report/</div>
+          <div style="padding-left: 16px; color: #f87171;">📁 components/</div>
+          <div style="padding-left: 16px; color: #d1d5db;">package.json, .env</div>
+        </div>
+      </div>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>장점</h4>
+          <ul>
+            <li>단일 프로젝트, 단일 서버</li>
+            <li>TypeScript 기본 지원</li>
+            <li>배포 용이</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>단점</h4>
+          <ul>
+            <li>node-cron, puppeteer가 서버리스 환경과 충돌 가능</li>
+            <li>명세서 구조 변환 필요</li>
+            <li>Edge Runtime 제약 주의</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 16px; padding: 12px; background: rgba(96,165,250,0.1); border-left: 3px solid #60a5fa;">
+  <strong>💡 추천:</strong> 명세서에서 node-cron(스케줄러), puppeteer(PDF), Ollama 연동을 명시하고 있어 <strong>A (React + Express 분리형)</strong>이 훨씬 자연스럽습니다.
+</div>

@@ -2,7 +2,7 @@ import express from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { searchStocks } from '../utils/stockCodes.js';
+import { searchCompanies } from '../utils/dartCorpCodes.js';
 
 const router = express.Router();
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -28,9 +28,11 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/stocks/search?q=
-router.get('/search', (req, res) => {
+router.get('/search', async (req, res) => {
   const { q } = req.query;
-  res.json(searchStocks(q || ''));
+  if (!q) return res.json([]);
+  const results = await searchCompanies(q);
+  res.json(results);
 });
 
 // POST /api/stocks  body: { code, name, market }

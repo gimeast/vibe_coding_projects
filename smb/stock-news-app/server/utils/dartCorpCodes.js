@@ -4,95 +4,120 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { createWriteStream } from 'fs';
+import AdmZip from 'adm-zip';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CACHE_FILE = join(__dirname, '../data/dartCorpCodes.json');
+const DATA_DIR = join(__dirname, '../data');
+const CORP_CODE_MAP_FILE = join(DATA_DIR, 'dartCorpCodes.json');    // stockCode → corpCode
+const COMPANY_LIST_FILE  = join(DATA_DIR, 'dartCompanyList.json');   // 검색용 전체 상장사 목록
 
-let corpCodeMap = null; // { stockCode: corpCode }
+let corpCodeMap   = null; // { '005930': '00126380', ... }
+let companyList   = null; // [{ code, name, corpCode }, ...]
 
-/**
- * DART 기업코드 XML 다운로드 및 파싱
- * ZIP 파일을 직접 처리하기 위해 adm-zip 대신 API 방식 사용
- */
-async function downloadCorpCodes(apiKey) {
-  // DART API: 기업코드 ZIP 다운로드
-  const url = `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`;
-  const { data } = await axios.get(url, {
-    responseType: 'arraybuffer',
-    timeout: 30000,
-  });
-
-  // ZIP 내부 CORPCODE.xml 파싱 (adm-zip 없이 간단한 방식)
-  // ZIP 바이너리에서 XML 추출
-  const buf = Buffer.from(data);
-  const zipText = buf.toString('latin1');
-  const xmlStart = zipText.indexOf('<?xml');
-  const xmlEnd = zipText.lastIndexOf('</result>') + '</result>'.length;
-
-  let xmlStr;
-  if (xmlStart !== -1 && xmlEnd > xmlStart) {
-    xmlStr = zipText.slice(xmlStart, xmlEnd);
-  } else {
-    // fallback: adm-zip 사용
-    const AdmZip = (await import('adm-zip')).default;
-    const zip = new AdmZip(buf);
-    xmlStr = zip.readAsText('CORPCODE.xml');
-  }
-
-  const parsed = await parseStringPromise(xmlStr, { explicitArray: false });
-  const list = parsed.result?.list || [];
-  const arr = Array.isArray(list) ? list : [list];
-
-  const map = {};
-  for (const item of arr) {
-    if (item.stock_code && item.corp_code) {
-      map[item.stock_code.trim()] = item.corp_code.trim();
-    }
-  }
-  return map;
+async function ensureDataDir() {
+  if (!existsSync(DATA_DIR)) await mkdir(DATA_DIR, { recursive: true });
 }
 
 /**
- * 기업코드 맵 로드 (캐시 우선, 없으면 다운로드)
+ * DART corpCode.xml ZIP 다운로드 → 파싱 → 두 파일 저장
  */
-export async function getCorpCodeMap() {
-  if (corpCodeMap) return corpCodeMap;
+async function downloadAndParse(apiKey) {
+  console.log('[DART] 전체 기업코드 다운로드 중...');
+  const url = `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`;
+  const { data } = await axios.get(url, { responseType: 'arraybuffer', timeout: 30000 });
 
-  // 캐시 확인
-  if (existsSync(CACHE_FILE)) {
-    const raw = await readFile(CACHE_FILE, 'utf-8');
-    corpCodeMap = JSON.parse(raw);
-    return corpCodeMap;
+  // ZIP → XML 추출
+  const zip = new AdmZip(Buffer.from(data));
+  const entry = zip.getEntries().find(e => e.entryName.toUpperCase() === 'CORPCODE.XML');
+  if (!entry) throw new Error('CORPCODE.XML을 ZIP에서 찾을 수 없습니다');
+  const xmlStr = zip.readAsText(entry);
+
+  // XML 파싱
+  const parsed = await parseStringPromise(xmlStr, { explicitArray: false });
+  const rawList = parsed?.result?.list;
+  const arr = Array.isArray(rawList) ? rawList : rawList ? [rawList] : [];
+
+  // 상장사만 필터 (stock_code가 있는 것)
+  const codeMap = {};
+  const searchList = [];
+
+  for (const item of arr) {
+    const stockCode = (item.stock_code || '').trim();
+    const corpCode  = (item.corp_code  || '').trim();
+    const corpName  = (item.corp_name  || '').trim();
+    if (stockCode && corpCode) {
+      codeMap[stockCode] = corpCode;
+      searchList.push({ code: stockCode, name: corpName, corpCode });
+    }
   }
 
-  // API 키 없으면 빈 맵 반환
+  await ensureDataDir();
+  await writeFile(CORP_CODE_MAP_FILE, JSON.stringify(codeMap),      'utf-8');
+  await writeFile(COMPANY_LIST_FILE,  JSON.stringify(searchList),    'utf-8');
+
+  console.log(`[DART] 기업코드 저장 완료 — 상장사 ${searchList.length}개`);
+  return { codeMap, searchList };
+}
+
+/**
+ * 캐시 로드 또는 다운로드
+ */
+async function loadOrDownload() {
+  // 이미 메모리에 있으면 그대로
+  if (corpCodeMap && companyList) return;
+
+  // 캐시 파일 있으면 읽기
+  if (existsSync(CORP_CODE_MAP_FILE) && existsSync(COMPANY_LIST_FILE)) {
+    corpCodeMap  = JSON.parse(await readFile(CORP_CODE_MAP_FILE, 'utf-8'));
+    companyList  = JSON.parse(await readFile(COMPANY_LIST_FILE,  'utf-8'));
+    console.log(`[DART] 기업코드 캐시 로드 — 상장사 ${companyList.length}개`);
+    return;
+  }
+
+  // 캐시 없으면 다운로드
   const apiKey = process.env.DART_API_KEY;
   if (!apiKey) {
-    console.warn('[DART] API 키 없음 — 공시 기능 비활성화');
+    console.warn('[DART] API 키 없음 — 기업코드 기능 비활성화');
     corpCodeMap = {};
-    return corpCodeMap;
+    companyList = [];
+    return;
   }
 
-  console.log('[DART] 기업코드 다운로드 중...');
-  try {
-    corpCodeMap = await downloadCorpCodes(apiKey);
-    const dataDir = join(__dirname, '../data');
-    if (!existsSync(dataDir)) await mkdir(dataDir, { recursive: true });
-    await writeFile(CACHE_FILE, JSON.stringify(corpCodeMap), 'utf-8');
-    console.log(`[DART] 기업코드 캐시 저장 완료 (${Object.keys(corpCodeMap).length}개)`);
-  } catch (err) {
-    console.error('[DART] 기업코드 다운로드 실패:', err.message);
-    corpCodeMap = {};
-  }
-
-  return corpCodeMap;
+  const result = await downloadAndParse(apiKey);
+  corpCodeMap = result.codeMap;
+  companyList = result.searchList;
 }
 
 /**
  * 종목코드(6자리) → DART 기업고유번호(8자리)
  */
 export async function lookupCorpCode(stockCode) {
-  const map = await getCorpCodeMap();
-  return map[stockCode] || null;
+  await loadOrDownload();
+  return corpCodeMap[stockCode] || null;
+}
+
+/**
+ * 회사명/종목코드로 검색 (최대 15개)
+ * @param {string} query
+ * @returns {{ code: string, name: string, corpCode: string }[]}
+ */
+export async function searchCompanies(query) {
+  await loadOrDownload();
+  if (!query || !companyList?.length) return [];
+
+  const q = query.trim().toLowerCase();
+  return companyList
+    .filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q))
+    .slice(0, 15);
+}
+
+/**
+ * 앱 시작 시 백그라운드로 기업코드 초기화
+ */
+export async function initCorpCodes() {
+  try {
+    await loadOrDownload();
+  } catch (err) {
+    console.error('[DART] 기업코드 초기화 실패:', err.message);
+  }
 }

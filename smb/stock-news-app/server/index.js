@@ -10,6 +10,7 @@ import newsRouter from './routes/news.js';
 import dartRouter from './routes/dart.js';
 import reportRouter from './routes/report.js';
 import schedulerRouter from './routes/scheduler.js';
+import { initCorpCodes } from './utils/dartCorpCodes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -54,6 +55,9 @@ app.listen(PORT, () => {
   console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
   console.log(`📊 Ollama: ${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}`);
   console.log(`🔑 DART API: ${process.env.DART_API_KEY ? '설정됨' : '⚠️ 미설정'}`);
+
+  // DART 기업코드 백그라운드 초기화 (첫 실행 시 다운로드, 이후 캐시 사용)
+  initCorpCodes().catch(err => console.error('[DART] 초기화 오류:', err.message));
 });
 
 export default app;
