@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #000000;
+  --color-surface-soft: #0d0d0d;
+  --color-surface-card: #1a1a1a;
+  --color-surface-elevated: #262626;
+  --color-hairline: #3c3c3c;
+  --color-on-dark: #ffffff;
+  --color-body: #bbbbbb;
+  --color-body-strong: #e6e6e6;
+  --color-muted: #7e7e7e;
+  --color-m-blue-light: #0066b1;
+  --color-m-blue-dark: #1c69d4;
+  --color-m-red: #e22718;
+  --color-up: #0fa336;
+  --color-down: #e22718;
+  --color-neutral: #3c3c3c;
+
+  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --border-radius-none: 0px;
+  --border-radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0d0d0d; }
+::-webkit-scrollbar-thumb { background: #3c3c3c; }
+::-webkit-scrollbar-thumb:hover { background: #262626; }
+
+/* M 트라이컬러 스트라이프 */
+.m-stripe {
+  height: 3px;
+  background: linear-gradient(90deg, #0066b1 0%, #1c69d4 50%, #e22718 100%);
+}
+
+/* 버튼 기본 — 0px radius, UPPERCASE, 1.5px 자간 */
+.btn-primary {
+  background: transparent;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-primary:hover {
+  background: #ffffff;
+  color: #000000;
+}
+.btn-primary:disabled {
+  border-color: #3c3c3c;
+  color: #3c3c3c;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #3c3c3c;
+  color: #7e7e7e;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-ghost:hover {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+/* 배지 */
+.badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  color: #fff;
+  text-transform: uppercase;
+}
+.badge-up    { background: #0fa336; }
+.badge-down  { background: #e22718; }
+.badge-neutral { background: #3c3c3c; }
+.badge-dart  { background: #1c69d4; }
+.badge-high  { background: #1c69d4; }
+.badge-normal { background: #262626; border: 1px solid #3c3c3c; }
+.badge-low   { background: #262626; border: 1px solid #3c3c3c; color: #7e7e7e; }
+
+/* 입력 */
+input.dark-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #3c3c3c;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 8px 10px;
+  outline: none;
+  border-radius: 0;
+}
+input.dark-input::placeholder { color: #7e7e7e; }
+input.dark-input:focus { border-color: #ffffff; }
+
+/* 카드 */
+.news-card {
+  background: #1a1a1a;
+  border: 1px solid #3c3c3c;
+  padding: 14px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.news-card:hover { border-color: #262626; }
+
+/* 레이블 */
+.label-upper {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #7e7e7e;
+}
