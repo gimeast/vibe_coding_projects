@@ -17,7 +17,7 @@
   --color-down: #e22718;
   --color-neutral: #3c3c3c;
 
-  --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --border-radius-none: 0px;
   --border-radius-full: 9999px;
@@ -32,8 +32,9 @@
 body {
   background-color: #000;
   color: #fff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 300;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -54,7 +55,7 @@ body {
   background: transparent;
   border: 1px solid #ffffff;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -77,7 +78,7 @@ body {
   background: transparent;
   border: 1px solid #3c3c3c;
   color: #7e7e7e;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -94,7 +95,7 @@ body {
 /* 배지 */
 .badge {
   display: inline-block;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
   padding: 2px 8px;
@@ -115,7 +116,7 @@ input.dark-input {
   background: #1a1a1a;
   border: 1px solid #3c3c3c;
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-family: inherit;
   padding: 8px 10px;
   outline: none;
@@ -136,9 +137,9 @@ input.dark-input:focus { border-color: #ffffff; }
 
 /* 레이블 */
 .label-upper {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: #7e7e7e;
 }

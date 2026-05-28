@@ -62,7 +62,7 @@ async function downloadAndParse(apiKey) {
 /**
  * 캐시 로드 또는 다운로드
  */
-async function loadOrDownload() {
+ async function loadOrDownload() {
   // 이미 메모리에 있으면 그대로
   if (corpCodeMap && companyList) return;
 
@@ -94,6 +94,31 @@ async function loadOrDownload() {
 export async function lookupCorpCode(stockCode) {
   await loadOrDownload();
   return corpCodeMap[stockCode] || null;
+}
+
+/**
+ * 종목코드(6자리) → 시장 구분 (KOSPI | KOSDAQ | KONEX | 기타)
+ * DART company.json API의 corp_cls 필드 사용: Y=KOSPI, K=KOSDAQ, N=KONEX
+ */
+export async function lookupMarketByCode(stockCode) {
+  await loadOrDownload();
+  const corpCode = corpCodeMap[stockCode];
+  if (!corpCode) return 'KOSPI'; // 기본값
+
+  const apiKey = process.env.DART_API_KEY;
+  if (!apiKey) return 'KOSPI';
+
+  try {
+    const url = `https://opendart.fss.or.kr/api/company.json?crtfc_key=${apiKey}&corp_code=${corpCode}`;
+    const { data } = await axios.get(url, { timeout: 5000 });
+    const cls = data?.corp_cls;
+    if (cls === 'Y') return 'KOSPI';
+    if (cls === 'K') return 'KOSDAQ';
+    if (cls === 'N') return 'KONEX';
+    return '기타';
+  } catch {
+    return 'KOSPI'; // API 실패 시 기본값
+  }
 }
 
 /**

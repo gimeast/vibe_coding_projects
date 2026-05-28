@@ -1,9 +1,8 @@
+import { useState } from 'react'
+
 export default function DartCard({ item }) {
-  const { title, type, submittedAt, url, ai } = item
-  const impact = ai?.impact || '중립'
-  const importance = ai?.importance || '보통'
-  const impactClass = impact === '상승요인' ? 'badge-up' : impact === '하락요인' ? 'badge-down' : 'badge-neutral'
-  const importanceClass = importance === '높음' ? 'badge-high' : importance === '낮음' ? 'badge-low' : 'badge-normal'
+  const { title, type, submittedAt, url, rcpNo } = item
+  const [downloading, setDownloading] = useState(false)
 
   return (
     <div className="news-card" style={{ borderLeft: '2px solid #1c69d4' }}>
@@ -11,37 +10,49 @@ export default function DartCard({ item }) {
         <span className="label-upper" style={{ color: '#1c69d4' }}>
           DART · {type}{submittedAt ? ' · ' + submittedAt : ''}
         </span>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <span className={`badge ${importanceClass}`}>중요도 {importance}</span>
-          <span className={`badge ${impactClass}`}>{impact}</span>
-        </div>
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#e6e6e6', lineHeight: 1.4, marginBottom: 8 }}>
-        {title}
-      </div>
+      {url
+        ? <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: '#e6e6e6', lineHeight: 1.45, marginBottom: 8, cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={e => e.currentTarget.style.color = '#e6e6e6'}
+            >{title}</div>
+          </a>
+        : <div style={{ fontSize: 17, fontWeight: 700, color: '#e6e6e6', lineHeight: 1.45, marginBottom: 8 }}>{title}</div>
+      }
 
-      {ai?.summary && (
-        <div style={{ fontSize: 12, fontWeight: 300, color: '#bbbbbb', lineHeight: 1.6, marginBottom: 8 }}>
-          {ai.summary}
+      {rcpNo && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={async () => {
+              setDownloading(true)
+              try {
+                const res = await fetch(`/api/dart/pdf/${rcpNo}`)
+                if (!res.ok) { const err = await res.json(); alert(err.error || '다운로드 실패'); return }
+                const blob = await res.blob()
+                const ext = res.headers.get('content-type')?.includes('pdf') ? 'pdf' : 'hwp'
+                const a = document.createElement('a')
+                a.href = URL.createObjectURL(blob)
+                a.download = `dart_${rcpNo}.${ext}`
+                a.click()
+                URL.revokeObjectURL(a.href)
+              } catch { alert('다운로드 중 오류가 발생했습니다') }
+              finally { setDownloading(false) }
+            }}
+            disabled={downloading}
+            style={{
+              background: 'none', border: 'none', cursor: downloading ? 'not-allowed' : 'pointer',
+              fontSize: 14, fontWeight: 700, letterSpacing: '1px',
+              color: downloading ? '#3c3c3c' : '#1c69d4', padding: 0,
+            }}
+            onMouseEnter={e => { if (!downloading) e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { if (!downloading) e.currentTarget.style.color = '#1c69d4' }}
+          >
+            {downloading ? '다운로드 중...' : 'PDF ↓'}
+          </button>
         </div>
       )}
-
-      {ai?.reason && (
-        <div style={{ fontSize: 11, color: '#7e7e7e', marginBottom: 8 }}>
-          📌 {ai.reason}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        {url && (
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', color: '#7e7e7e', textDecoration: 'none' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-            onMouseLeave={e => e.currentTarget.style.color = '#7e7e7e'}
-          >공시 보기 →</a>
-        )}
-      </div>
     </div>
   )
 }

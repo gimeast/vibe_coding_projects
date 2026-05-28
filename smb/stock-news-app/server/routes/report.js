@@ -1,11 +1,12 @@
 import express from 'express';
 import { readFile } from 'fs/promises';
-import { readdirSync } from 'fs';
+import { readdirSync, unlinkSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { collectNews } from '../api/newsCollector.js';
 import { collectDart } from '../api/dartCollector.js';
-import { summarizeNews, summarizeDart } from '../api/aiSummarizer.js';
+import { collectStockData } from '../api/stockDataCollector.js';
+import { collectMarketData } from '../api/marketCollector.js';
 import { generatePDF } from '../api/pdfGenerator.js';
 
 const router = express.Router();
@@ -80,49 +81,47 @@ async function runReportJob(jobId) {
   }
 
   job.status = 'running';
+
+  // 시장 전체 데이터 수집 (KOSPI/KOSDAQ 지수 + 시장 뉴스)
+  emitSSE(job, 'collecting_market', {});
+  let marketData = { kospi: null, kosdaq: null, news: [] };
+  try {
+    marketData = await collectMarketData();
+  } catch { /* 실패해도 계속 */ }
+
   const reportStocks = [];
 
   for (let i = 0; i < stocks.length; i++) {
     const stock = stocks[i];
     emitSSE(job, 'stock_start', { stockName: stock.name, index: i, total: stocks.length });
 
-    // 1. 뉴스 수집
+    // 1. 시세 수집
+    let stockData = null;
+    try {
+      stockData = await collectStockData(stock.code);
+    } catch { /* 실패해도 계속 */ }
+
+    // 2. 뉴스 수집
     emitSSE(job, 'collecting_news', { stockName: stock.name });
     let newsItems = [];
     try {
       newsItems = await collectNews(stock);
     } catch { /* 실패해도 계속 */ }
 
-    // 2. DART 공시 수집
+    // 3. DART 공시 수집 (리포트에는 안 쓰지만 보관)
     emitSSE(job, 'collecting_dart', { stockName: stock.name });
     let dartItems = [];
     try {
       dartItems = await collectDart(stock);
     } catch { /* 실패해도 계속 */ }
 
-    // 3. 뉴스 AI 요약
-    const newsWithAI = [];
-    for (let j = 0; j < newsItems.length; j++) {
-      emitSSE(job, 'summarizing', { stockName: stock.name, current: j + 1, total: newsItems.length });
-      const ai = await summarizeNews(stock.name, newsItems[j].title, newsItems[j].description).catch(() => null);
-      newsWithAI.push({ ...newsItems[j], ai });
-    }
-
-    // 4. DART AI 요약
-    const dartWithAI = [];
-    for (let j = 0; j < dartItems.length; j++) {
-      emitSSE(job, 'summarizing_dart', { stockName: stock.name, current: j + 1, total: dartItems.length });
-      const ai = await summarizeDart(stock.name, dartItems[j].type, dartItems[j].title).catch(() => null);
-      dartWithAI.push({ ...dartItems[j], ai });
-    }
-
-    reportStocks.push({ ...stock, news: newsWithAI, dart: dartWithAI });
+    reportStocks.push({ ...stock, stockData, news: newsItems, dart: dartItems });
     emitSSE(job, 'stock_done', { stockName: stock.name, index: i });
   }
 
   // 5. PDF 생성
   emitSSE(job, 'generating_pdf', {});
-  const reportData = { stocks: reportStocks, generatedAt: new Date().toISOString() };
+  const reportData = { stocks: reportStocks, marketData, generatedAt: new Date().toISOString() };
   const filename = await generatePDF(reportData);
 
   job.status = 'done';
@@ -156,6 +155,22 @@ router.get('/download/:filename', (req, res) => {
   res.download(filePath, err => {
     if (err) res.status(404).json({ error: '파일을 찾을 수 없습니다' });
   });
+});
+
+// DELETE /api/report/:filename
+router.delete('/:filename', (req, res) => {
+  const { filename } = req.params;
+  // 경로 탈출 방지: 파일명에 슬래시/점점 금지
+  if (!filename.endsWith('.pdf') || filename.includes('/') || filename.includes('..')) {
+    return res.status(400).json({ error: '잘못된 파일명입니다' });
+  }
+  const filePath = join(REPORTS_DIR, filename);
+  try {
+    unlinkSync(filePath);
+    res.json({ ok: true });
+  } catch {
+    res.status(404).json({ error: '파일을 찾을 수 없습니다' });
+  }
 });
 
 export default router;

@@ -14,31 +14,29 @@ export default function ProgressPanel({ stocks, events, currentStockName, status
   if (status === 'idle') return null
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #3c3c3c', padding: 16, marginBottom: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid #3c3c3c', padding: 18, marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <span className="label-upper">
           {status === 'generating_pdf' ? 'PDF 생성 중...' :
            status === 'done' ? '완료' :
            `리포트 생성 중 — ${currentStockName || ''}`}
         </span>
-        {status === 'done' && <span style={{ color: '#0fa336', fontSize: 10, fontWeight: 700 }}>✓ 완료</span>}
+        {status === 'done' && <span style={{ color: '#0fa336', fontSize: 13, fontWeight: 700 }}>✓ 완료</span>}
       </div>
 
       {stocks.map(stock => {
         const { pct, label, done } = getProgress(stock.name)
         return (
-          <div key={stock.code} style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#e6e6e6' }}>{stock.name}</span>
-              <span style={{ fontSize: 10, color: done ? '#0fa336' : '#7e7e7e' }}>{label}</span>
+          <div key={stock.code} style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#e6e6e6' }}>{stock.name}</span>
+              <span style={{ fontSize: 14, color: done ? '#0fa336' : '#7e7e7e' }}>{label}</span>
             </div>
-            <div style={{ height: 2, background: '#1a1a1a', border: '1px solid #3c3c3c' }}>
+            <div style={{ height: 3, background: '#1a1a1a', border: '1px solid #3c3c3c' }}>
               <div style={{
                 height: '100%',
                 width: `${pct}%`,
-                background: done
-                  ? '#0fa336'
-                  : 'linear-gradient(90deg, #0066b1, #1c69d4)',
+                background: done ? '#0fa336' : 'linear-gradient(90deg, #0066b1, #1c69d4)',
                 transition: 'width 0.4s ease'
               }} />
             </div>
@@ -47,7 +45,7 @@ export default function ProgressPanel({ stocks, events, currentStockName, status
       })}
 
       {status === 'generating_pdf' && (
-        <div style={{ marginTop: 8, fontSize: 11, color: '#7e7e7e' }}>
+        <div style={{ marginTop: 10, fontSize: 15, color: '#7e7e7e' }}>
           Puppeteer로 PDF 렌더링 중...
         </div>
       )}

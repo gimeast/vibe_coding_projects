@@ -21,13 +21,13 @@ export async function collectDart(stock) {
   }
 
   const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
 
   const params = {
     crtfc_key: apiKey,
     corp_code: corpCode,
-    bgn_de: formatDate(yesterday),
+    bgn_de: formatDate(weekAgo),
     end_de: formatDate(today),
     sort: 'date',
     sort_mth: 'desc',
@@ -48,8 +48,8 @@ export async function collectDart(stock) {
       type: mapDisclosureType(item.pblntf_ty),
       typeCode: item.pblntf_ty || '',
       corpName: item.corp_name || stock.name,
-      rcpNo: item.rcp_no || '',
-      url: `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${item.rcp_no}`,
+      rcpNo: item.rcept_no || '',
+      url: item.rcept_no ? `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${item.rcept_no}` : '',
       submittedAt: item.rcept_dt || '',
     }));
   } catch (err) {

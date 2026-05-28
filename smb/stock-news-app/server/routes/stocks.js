@@ -2,7 +2,7 @@ import express from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { searchCompanies } from '../utils/dartCorpCodes.js';
+import { searchCompanies, lookupMarketByCode } from '../utils/dartCorpCodes.js';
 
 const router = express.Router();
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,7 +44,8 @@ router.post('/', async (req, res) => {
   if (stocks.length >= 20) return res.status(400).json({ error: '최대 20개까지 등록 가능합니다' });
   if (stocks.find(s => s.code === code)) return res.status(409).json({ error: '이미 등록된 종목입니다' });
 
-  const newStock = { code, name, market: market || 'KOSPI', addedAt: new Date().toISOString() };
+  const resolvedMarket = market || await lookupMarketByCode(code);
+  const newStock = { code, name, market: resolvedMarket, addedAt: new Date().toISOString() };
   stocks.push(newStock);
   await writeStocks(stocks);
   res.status(201).json(newStock);
