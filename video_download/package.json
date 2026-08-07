@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "preview": "electron-vite preview",
     "fetch:bin": "node scripts/fetch-binaries.mjs",
+    "probe": "electron out/main/probe.js",
     "pack:mac": "npm run build && electron-builder --mac --arm64",
     "pack:win": "npm run build && electron-builder --win --x64"
   },

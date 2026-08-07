@@ -6,7 +6,11 @@ export default defineConfig({
   main: {
     build: {
       rollupOptions: {
-        input: { index: resolve(__dirname, 'src/main/index.ts') },
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts'),
+          // GUI 없이 해석만 돌려보는 진단 진입점
+          probe: resolve(__dirname, 'src/main/probe.ts'),
+        },
       },
     },
   },

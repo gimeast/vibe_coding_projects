@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { getBinaryStatus, updateYtdlp } from './binaries'
 import { queue } from './download/queue'
-import { resolve as resolveUrl } from './resolver'
+import { openLoginWindow, resolve as resolveUrl } from './resolver'
 import { getSettings, updateSettings } from './state'
 import type { MediaInfo, Selection, Settings } from '../shared/types'
 
@@ -9,6 +9,11 @@ export const JOB_UPDATE_CHANNEL = 'job:update'
 
 export function registerIpc(): void {
   ipcMain.handle('resolve', (_e, url: string) => resolveUrl(url))
+
+  ipcMain.handle('resolve:login', (_e, url: string) => {
+    // 스니핑 창과 같은 파티션이라 여기서 로그인하면 그 세션이 그대로 재사용된다
+    if (/^https?:\/\//i.test(url)) openLoginWindow(url)
+  })
 
   ipcMain.handle(
     'download:start',

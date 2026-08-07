@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { requireYtdlp } from '../binaries'
-import type { MediaFormat, MediaInfo } from '../../shared/types'
+import type { MediaFormat, MediaInfo, RequestContext } from '../../shared/types'
 
 const execFileAsync = promisify(execFile)
 
@@ -78,8 +78,12 @@ function sortFormats(formats: MediaFormat[]): MediaFormat[] {
 
 function normalizeInfo(
   raw: RawInfo,
-  originalUrl: string,
+  /** 실제로 yt-dlp 에 넘긴 주소. 스니퍼 경로에서는 매니페스트 주소다 */
+  fetchUrl: string,
+  /** 사용자에게 보여줄 원본 페이지 주소 */
+  displayUrl: string,
   via: MediaInfo['via'],
+  request: RequestContext | null,
 ): MediaInfo {
   // 재생목록이면 첫 항목만 취한다. 일괄 다운로드는 이후 단계 과제.
   let node = raw
@@ -95,8 +99,10 @@ function normalizeInfo(
     .filter((f) => f.formatId && (f.hasVideo || f.hasAudio))
 
   return {
-    sourceUrl: node.webpage_url ?? originalUrl,
-    originalUrl,
+    // 스니퍼 경로에서는 반드시 낚아챈 매니페스트 주소로 받아야 한다.
+    // webpage_url 을 신뢰하면 generic 추출기가 채워 넣은 값에 휘둘린다.
+    sourceUrl: via === 'sniffer' ? fetchUrl : (node.webpage_url ?? fetchUrl),
+    originalUrl: displayUrl,
     id: node.id ?? '',
     title: node.title ?? '(제목 없음)',
     thumbnail: node.thumbnail ?? null,
@@ -106,7 +112,27 @@ function normalizeInfo(
     formats: sortFormats(formats),
     playlistCount,
     via,
+    request,
+    resolvedAt: Date.now(),
   }
+}
+
+/**
+ * 우리가 고쳐 쓴 매니페스트를 넘길 때만 file:// 을 허용한다.
+ * yt-dlp 가 기본적으로 막아 둔 기능이라, 사용자 입력 URL 에는 절대 붙이지 않는다.
+ */
+export function localManifestArgs(url: string): string[] {
+  return url.startsWith('file://') ? ['--enable-file-urls'] : []
+}
+
+/** referer / UA / 쿠키를 yt-dlp 인자로 옮긴다. 해석과 다운로드가 같은 조건을 써야 한다. */
+export function requestArgs(request: RequestContext | null): string[] {
+  if (!request) return []
+  return [
+    ...(request.referer ? ['--referer', request.referer] : []),
+    ...(request.userAgent ? ['--user-agent', request.userAgent] : []),
+    ...(request.cookieFile ? ['--cookies', request.cookieFile] : []),
+  ]
 }
 
 /**
@@ -117,7 +143,13 @@ function normalizeInfo(
  */
 export async function probeWithYtdlp(
   url: string,
-  opts: { extraArgs?: string[]; via?: MediaInfo['via'] } = {},
+  opts: {
+    extraArgs?: string[]
+    via?: MediaInfo['via']
+    request?: RequestContext | null
+    /** 표시에 쓸 원본 페이지 주소. 스니퍼 경로에서는 매니페스트 주소와 다르다 */
+    displayUrl?: string
+  } = {},
 ): Promise<{ info: MediaInfo } | { info: null; stderr: string }> {
   const bin = await requireYtdlp()
 
@@ -128,6 +160,8 @@ export async function probeWithYtdlp(
     // 재생목록 URL 이라도 앞쪽 몇 개만 훑어 응답을 빠르게 유지
     '--playlist-end',
     '20',
+    ...requestArgs(opts.request ?? null),
+    ...localManifestArgs(url),
     ...(opts.extraArgs ?? []),
     url,
   ]
@@ -138,7 +172,15 @@ export async function probeWithYtdlp(
       maxBuffer: 64 * 1024 * 1024, // 포맷이 많은 영상은 JSON 이 꽤 커진다
     })
     const raw = JSON.parse(stdout) as RawInfo
-    return { info: normalizeInfo(raw, url, opts.via ?? 'ytdlp') }
+    return {
+      info: normalizeInfo(
+        raw,
+        url,
+        opts.displayUrl ?? url,
+        opts.via ?? 'ytdlp',
+        opts.request ?? null,
+      ),
+    }
   } catch (err) {
     const stderr =
       err && typeof err === 'object' && 'stderr' in err

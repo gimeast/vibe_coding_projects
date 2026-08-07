@@ -3,6 +3,8 @@ import { BrowserWindow, app, shell } from 'electron'
 import { maybeAutoUpdate } from './binaries'
 import { queue } from './download/queue'
 import { broadcastJobUpdates, registerIpc } from './ipc'
+import { pruneCookieFiles } from './resolver/cookies'
+import { pruneManifests } from './resolver/manifest'
 import { getSettings } from './state'
 
 function createWindow(): BrowserWindow {
@@ -46,6 +48,8 @@ app.whenReady().then(() => {
 
   // 사이트가 자주 깨지므로 주기적으로 yt-dlp 를 갱신한다. 실패해도 앱은 계속 뜬다.
   void maybeAutoUpdate(getSettings().updateIntervalDays).catch(() => {})
+  void pruneCookieFiles().catch(() => {})
+  void pruneManifests().catch(() => {})
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

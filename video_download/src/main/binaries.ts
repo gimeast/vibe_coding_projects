@@ -29,12 +29,26 @@ function isExecutable(path: string): boolean {
   }
 }
 
-/** 동봉 바이너리가 놓이는 디렉터리. dev 와 packaged 가 다르다. */
-function bundledDir(): string {
+/**
+ * 동봉 바이너리가 놓일 수 있는 디렉터리들.
+ *
+ * packaged 는 resourcesPath 하나로 확정되지만, dev 는 앱을 어떻게 띄우느냐에 따라
+ * `app.getAppPath()` 가 프로젝트 루트일 수도 있고 (`electron .`)
+ * 진입 파일의 디렉터리일 수도 있다 (`electron out/main/foo.js`).
+ * 후자에서 조용히 시스템 바이너리로 폴백해 버리면 원인을 찾기 어려운 실패가 된다.
+ */
+function bundledDirs(): string[] {
   const platformDir = `${process.platform}-${process.arch}`
-  return app.isPackaged
-    ? join(process.resourcesPath, 'bin', platformDir)
-    : join(app.getAppPath(), 'resources', 'bin', platformDir)
+  const suffix = ['resources', 'bin', platformDir]
+
+  if (app.isPackaged) return [join(process.resourcesPath, 'bin', platformDir)]
+
+  return [
+    join(app.getAppPath(), ...suffix),
+    // out/main → 프로젝트 루트
+    join(__dirname, '..', '..', ...suffix),
+    join(process.cwd(), ...suffix),
+  ]
 }
 
 function findOnPath(name: string): string | null {
@@ -49,8 +63,10 @@ function findOnPath(name: string): string | null {
 
 /** 동봉본 우선, 없으면 시스템 설치본으로 폴백. */
 function locate(name: string): Pick<BinaryInfo, 'path' | 'source'> {
-  const bundled = join(bundledDir(), name + EXE)
-  if (isExecutable(bundled)) return { path: bundled, source: 'bundled' }
+  for (const dir of bundledDirs()) {
+    const bundled = join(dir, name + EXE)
+    if (isExecutable(bundled)) return { path: bundled, source: 'bundled' }
+  }
 
   const system = findOnPath(name)
   if (system) return { path: system, source: 'system' }
@@ -58,13 +74,22 @@ function locate(name: string): Pick<BinaryInfo, 'path' | 'source'> {
   return { path: '', source: 'missing' }
 }
 
+/**
+ * 동봉하는 yt-dlp 는 PyInstaller 번들이라 실행할 때마다 자기 자신을 풀어낸다.
+ * `--version` 한 줄 찍는 데도 실측 9초쯤 걸려서, 타임아웃을 짧게 잡으면
+ * 바이너리가 멀쩡한데도 "없음" 으로 표시된다.
+ */
+const VERSION_PROBE_TIMEOUT_MS = 30_000
+
 async function probeVersion(
   path: string,
   args: string[],
   parse: (stdout: string) => string,
 ): Promise<string | null> {
   try {
-    const { stdout } = await execFileAsync(path, args, { timeout: 10_000 })
+    const { stdout } = await execFileAsync(path, args, {
+      timeout: VERSION_PROBE_TIMEOUT_MS,
+    })
     return parse(stdout).trim() || null
   } catch {
     return null

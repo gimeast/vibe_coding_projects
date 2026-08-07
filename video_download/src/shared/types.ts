@@ -24,6 +24,18 @@ export interface MediaFormat {
   hasAudio: boolean
 }
 
+/**
+ * 스니퍼로 찾아낸 주소를 다시 요청할 때 필요한 맥락.
+ * referer 를 검사하거나 로그인 쿠키를 요구하는 사이트가 있어서, 해석 시점의
+ * 조건을 그대로 다운로드 시점까지 들고 가야 한다.
+ */
+export interface RequestContext {
+  referer: string | null
+  userAgent: string | null
+  /** main 프로세스가 만든 Netscape 쿠키 파일 경로 */
+  cookieFile: string | null
+}
+
 export interface MediaInfo {
   /** 실제로 해석에 성공한 URL. 스니퍼를 거친 경우 원본과 다를 수 있다 */
   sourceUrl: string
@@ -40,6 +52,14 @@ export interface MediaInfo {
   playlistCount: number | null
   /** 어느 경로로 찾았는지 */
   via: 'ytdlp' | 'sniffer'
+  /** 1차 경로로 풀린 경우 null. 스니퍼를 거쳤으면 재요청 조건이 담긴다 */
+  request: RequestContext | null
+  /**
+   * 해석한 시각 (epoch ms).
+   * 스니퍼가 잡는 주소는 만료 토큰이 붙어 있는 경우가 많아 (px-time, Expires 등)
+   * 오래 묵힌 뒤 받으면 403/410 이 난다. 만료 안내를 띄우는 판단에 쓴다.
+   */
+  resolvedAt: number
 }
 
 // ------------------------------------------------------------------- 프리셋

@@ -97,13 +97,34 @@ export default function App() {
           </button>
         </section>
 
+        {resolving ? (
+          <p className="muted hint">
+            지원 사이트가 아니면 페이지를 직접 열어 재생해 보며 찾습니다. 최대 20초쯤
+            걸릴 수 있습니다.
+          </p>
+        ) : null}
+
         {ytdlpMissing ? (
           <div className="banner error">
             yt-dlp 를 찾지 못했습니다. 설치한 뒤 앱을 다시 실행해 주세요.
           </div>
         ) : null}
 
-        {error ? <div className="banner error">{error}</div> : null}
+        {error ? (
+          <div className="banner error">
+            <span>{error}</span>
+            <div className="banner-actions">
+              {/* 로그인 창은 스니핑 세션과 파티션을 공유하므로, 여기서 로그인하면
+                  다시 찾기만 눌러도 그 세션이 재사용된다 */}
+              <button type="button" onClick={() => void window.api.openLogin(url)}>
+                이 페이지에서 로그인
+              </button>
+              <button type="button" onClick={() => void handleResolve()}>
+                다시 찾기
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {info ? (
           <MediaCard info={info} onDownload={(s) => void handleDownload(s)} />

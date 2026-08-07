@@ -18,6 +18,9 @@ const api = {
   resolve: (url: string): Promise<Result<MediaInfo>> =>
     ipcRenderer.invoke('resolve', url),
 
+  /** 스니핑 세션과 같은 파티션의 창을 띄워 사용자가 직접 로그인하게 한다 */
+  openLogin: (url: string): Promise<void> => ipcRenderer.invoke('resolve:login', url),
+
   download: {
     start: (info: MediaInfo, selection: Selection): Promise<Job> =>
       ipcRenderer.invoke('download:start', { info, selection }),

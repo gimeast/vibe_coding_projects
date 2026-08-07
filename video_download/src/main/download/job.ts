@@ -6,7 +6,14 @@ import type { Readable } from 'node:stream'
 import { getFfmpegPath, requireYtdlp } from '../binaries'
 import { humanizeYtdlpError } from '../resolver/errors'
 import { getSettings } from '../state'
-import type { Job, JobProgress, JobState, MediaInfo, Selection } from '../../shared/types'
+import type {
+  Job,
+  JobProgress,
+  JobState,
+  MediaInfo,
+  RequestContext,
+  Selection,
+} from '../../shared/types'
 import { buildDownloadArgs } from './args'
 import { parseLine } from './progress'
 
@@ -26,6 +33,11 @@ export class DownloadJob {
   readonly thumbnail: string | null
   readonly selection: Selection
   readonly createdAt = Date.now()
+
+  /** 스니퍼가 찾아준 주소면 referer·쿠키가 있어야 받을 수 있다 */
+  private readonly request: RequestContext | null
+  private readonly viaSniffer: boolean
+  private readonly resolvedAt: number
 
   private state: JobState = 'queued'
   private progress: JobProgress = { ...EMPTY_PROGRESS }
@@ -47,6 +59,9 @@ export class DownloadJob {
     this.title = info.title
     this.thumbnail = info.thumbnail
     this.selection = selection
+    this.request = info.request
+    this.viaSniffer = info.via === 'sniffer'
+    this.resolvedAt = info.resolvedAt
   }
 
   snapshot(): Job {
@@ -88,7 +103,14 @@ export class DownloadJob {
       return
     }
 
-    const args = buildDownloadArgs(this.url, this.selection, getSettings(), ffmpegPath)
+    const args = buildDownloadArgs(
+      this.url,
+      this.selection,
+      getSettings(),
+      ffmpegPath,
+      this.request,
+      this.viaSniffer ? this.title : null,
+    )
     this.transition('downloading')
 
     await new Promise<void>((resolve) => {
@@ -110,7 +132,7 @@ export class DownloadJob {
         } else if (code === 0) {
           this.transition('done')
         } else {
-          this.fail(humanizeYtdlpError(this.stderrTail.join('\n')))
+          this.fail(this.explainFailure(this.stderrTail.join('\n')))
         }
         resolve()
       })
@@ -146,6 +168,23 @@ export class DownloadJob {
           break
       }
     })
+  }
+
+  /**
+   * 스니퍼로 찾은 주소에는 만료 토큰이 붙어 있는 경우가 많다 (px-time, Expires 등).
+   * 해석 후 한참 뒤에 받으면 403/410 이 나는데, 일반 권한 오류로 안내하면
+   * 사용자가 로그인만 반복하게 된다. 시간 경과를 근거로 갈라준다.
+   */
+  private explainFailure(stderr: string): string {
+    const looksExpired = /HTTP Error 40[13]|HTTP Error 410|Unable to download|expired/i.test(
+      stderr,
+    )
+    const elapsedMin = Math.round((Date.now() - this.resolvedAt) / 60_000)
+
+    if (this.viaSniffer && looksExpired && elapsedMin >= 3) {
+      return `주소가 만료된 것 같습니다 (찾은 지 ${elapsedMin}분 경과). 이런 주소는 대개 짧은 유효기간이 걸려 있으니, 다시 찾기를 눌러 새로 받아 주세요.`
+    }
+    return humanizeYtdlpError(stderr)
   }
 
   private fail(message: string): void {
