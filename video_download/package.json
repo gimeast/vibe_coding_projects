@@ -1,0 +1,31 @@
+{
+  "name": "video-download",
+  "version": "0.1.0",
+  "description": "URL을 입력하면 페이지에서 동영상을 찾아 다운로드하는 데스크톱 앱",
+  "main": "./out/main/index.js",
+  "author": "gimeast",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "preview": "electron-vite preview",
+    "fetch:bin": "node scripts/fetch-binaries.mjs",
+    "pack:mac": "npm run build && electron-builder --mac --arm64",
+    "pack:win": "npm run build && electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}
