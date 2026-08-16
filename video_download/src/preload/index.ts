@@ -9,6 +9,7 @@ import type {
 } from '../shared/types'
 
 const JOB_UPDATE_CHANNEL = 'job:update'
+const JOB_REMOVED_CHANNEL = 'job:removed'
 
 /**
  * 렌더러에 노출하는 유일한 표면. ipcRenderer 자체는 절대 넘기지 않는다 —
@@ -34,6 +35,15 @@ const api = {
       ipcRenderer.on(JOB_UPDATE_CHANNEL, listener)
       return () => {
         ipcRenderer.removeListener(JOB_UPDATE_CHANNEL, listener)
+      }
+    },
+
+    /** 삭제는 상태 변화로 표현할 수 없어 별도 채널로 온다 */
+    onRemoved: (handler: (id: string) => void): (() => void) => {
+      const listener = (_e: unknown, id: string): void => handler(id)
+      ipcRenderer.on(JOB_REMOVED_CHANNEL, listener)
+      return () => {
+        ipcRenderer.removeListener(JOB_REMOVED_CHANNEL, listener)
       }
     },
   },

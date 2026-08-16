@@ -19,7 +19,7 @@ export default function App() {
     void window.api.binaries.status().then(setBinaries)
     void window.api.download.list().then(setJobs)
 
-    return window.api.download.onUpdate((updated) => {
+    const stopUpdates = window.api.download.onUpdate((updated) => {
       setJobs((prev) => {
         const index = prev.findIndex((j) => j.id === updated.id)
         if (index === -1) return [updated, ...prev]
@@ -28,6 +28,15 @@ export default function App() {
         return next
       })
     })
+
+    const stopRemovals = window.api.download.onRemoved((id) => {
+      setJobs((prev) => prev.filter((j) => j.id !== id))
+    })
+
+    return () => {
+      stopUpdates()
+      stopRemovals()
+    }
   }, [])
 
   const handleResolve = useCallback(async () => {
@@ -37,11 +46,19 @@ export default function App() {
     setError(null)
     setInfo(null)
 
-    const result = await window.api.resolve(url)
-    if (result.ok) setInfo(result.value)
-    else setError(result.error)
-
-    setResolving(false)
+    try {
+      const result = await window.api.resolve(url)
+      if (result.ok) setInfo(result.value)
+      else setError(result.error)
+    } catch (err) {
+      // main 이 던지면 여기서 잡지 않는 한 setResolving(false) 에 영영 못 닿는다.
+      // 버튼이 "찾는 중…" 에 묶여 앱이 멈춘 것처럼 보인다.
+      setError(
+        `예기치 못한 오류가 발생했습니다: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setResolving(false)
+    }
   }, [url, resolving])
 
   const handleDownload = useCallback(

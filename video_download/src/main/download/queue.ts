@@ -5,6 +5,7 @@ import { DownloadJob } from './job'
 const MAX_CONCURRENT = 2
 
 type Listener = (job: Job) => void
+type RemovalListener = (id: string) => void
 
 /**
  * 작업 목록과 동시 실행 수를 관리한다.
@@ -17,14 +18,28 @@ class DownloadQueue {
   private pending: DownloadJob[] = []
   private running = 0
   private listeners = new Set<Listener>()
+  private removalListeners = new Set<RemovalListener>()
 
   onChange(listener: Listener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
   }
 
+  /**
+   * 삭제는 상태 변화가 아니라 목록에서의 소멸이라 `Job` 스냅샷으로는 표현할 수 없다.
+   * 별도 채널이 없으면 main 에서만 지워지고 화면에는 그대로 남는다.
+   */
+  onRemoved(listener: RemovalListener): () => void {
+    this.removalListeners.add(listener)
+    return () => this.removalListeners.delete(listener)
+  }
+
   private notify(job: Job): void {
     for (const listener of this.listeners) listener(job)
+  }
+
+  private notifyRemoved(id: string): void {
+    for (const listener of this.removalListeners) listener(id)
   }
 
   enqueue(info: MediaInfo, selection: Selection): Job {
@@ -53,6 +68,7 @@ class DownloadQueue {
     job.cancel()
     this.pending = this.pending.filter((p) => p !== job)
     this.jobs.delete(id)
+    this.notifyRemoved(id)
   }
 
   list(): Job[] {

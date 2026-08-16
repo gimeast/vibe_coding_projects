@@ -11,8 +11,14 @@ import { sniffSession } from './sniffer'
  * 로그인 창과 스니핑 창이 같은 파티션을 쓰는 설계가 여기서 값을 한다.
  */
 
+/**
+ * userData 바로 아래에 만들면 안 된다 — Chromium 이 거기에 자기 쿠키 DB 를
+ * `Cookies` 라는 **파일**로 둔다. macOS/Windows 기본 파일시스템은 대소문자를
+ * 구분하지 않아 `cookies` 디렉터리를 만들려 하면 EEXIST 로 터진다.
+ * 우리 임시 파일은 전용 하위 폴더에 몰아둔다.
+ */
 function cookieDir(): string {
-  return join(app.getPath('userData'), 'cookies')
+  return join(app.getPath('userData'), 'scratch', 'cookies')
 }
 
 function line(parts: (string | number)[]): string {

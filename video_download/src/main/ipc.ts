@@ -6,6 +6,7 @@ import { getSettings, updateSettings } from './state'
 import type { MediaInfo, Selection, Settings } from '../shared/types'
 
 export const JOB_UPDATE_CHANNEL = 'job:update'
+export const JOB_REMOVED_CHANNEL = 'job:removed'
 
 export function registerIpc(): void {
   ipcMain.handle('resolve', (_e, url: string) => resolveUrl(url))
@@ -56,11 +57,19 @@ export function registerIpc(): void {
   })
 }
 
-/** 작업 상태 변화를 열려 있는 모든 창에 흘려보낸다. */
+function broadcast(channel: string, payload: unknown): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(channel, payload)
+  }
+}
+
+/** 작업 상태 변화와 삭제를 열려 있는 모든 창에 흘려보낸다. */
 export function broadcastJobUpdates(): () => void {
-  return queue.onChange((job) => {
-    for (const window of BrowserWindow.getAllWindows()) {
-      window.webContents.send(JOB_UPDATE_CHANNEL, job)
-    }
-  })
+  const stopUpdates = queue.onChange((job) => broadcast(JOB_UPDATE_CHANNEL, job))
+  const stopRemovals = queue.onRemoved((id) => broadcast(JOB_REMOVED_CHANNEL, id))
+
+  return () => {
+    stopUpdates()
+    stopRemovals()
+  }
 }

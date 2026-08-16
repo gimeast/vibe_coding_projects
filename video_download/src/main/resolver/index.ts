@@ -28,12 +28,22 @@ export async function resolve(url: string): Promise<Result<MediaInfo>> {
     return { ok: false, error: 'http 또는 https 주소만 지원합니다.' }
   }
 
-  // --- 1차 ---
-  const first = await probeWithYtdlp(trimmed)
-  if (first.info) return { ok: true, value: first.info }
+  try {
+    // --- 1차 ---
+    const first = await probeWithYtdlp(trimmed)
+    if (first.info) return { ok: true, value: first.info }
 
-  // --- 2차 ---
-  return sniffAndProbe(trimmed, first.stderr)
+    // --- 2차 ---
+    return await sniffAndProbe(trimmed, first.stderr)
+  } catch (err) {
+    // 여기서 던지면 렌더러의 await 가 reject 되어 UI 가 "찾는 중" 에 묶인다.
+    // 어떤 실패든 Result 로 돌려주는 것이 이 함수의 계약이다.
+    console.error('resolve failed:', err)
+    return {
+      ok: false,
+      error: `해석 중 오류가 발생했습니다: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
 }
 
 async function sniffAndProbe(

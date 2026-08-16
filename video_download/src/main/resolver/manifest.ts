@@ -23,8 +23,9 @@ import { sniffSession } from './sniffer'
 /** 이 접두사로 시작하는 주소는 우리가 만든 파일이다. args 쪽에서 판단에 쓴다. */
 export const LOCAL_MANIFEST_SCHEME = 'file://'
 
+/** cookies.ts 와 같은 이유로 userData 바로 아래를 피한다. */
 function manifestDir(): string {
-  return join(app.getPath('userData'), 'manifests')
+  return join(app.getPath('userData'), 'scratch', 'manifests')
 }
 
 /** XML 속성 안에서는 `&` 를 반드시 이스케이프해야 파서가 깨지지 않는다. */
