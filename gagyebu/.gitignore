@@ -1,3 +1,18 @@
 # Superpowers (brainstorming/planning artifacts)
 .superpowers/
 docs/superpowers/
+
+# Build & Gradle
+build/
+app/build/
+.gradle/
+local.properties
+
+# Keystore & Signing
+*.keystore
+*.jks
+
+# IDE & OS
+.idea/
+*.iml
+.DS_Store

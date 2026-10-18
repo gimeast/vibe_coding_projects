@@ -13,9 +13,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Pink80,
-    secondary = PinkGrey80,
-    tertiary = Red80,
+    primary = Blue80,
+    secondary = BlueGrey80,
+    tertiary = Blue40,
     background = SurfaceDark,
     surface = CardDark,
     onPrimary = TextPrimary,
@@ -24,9 +24,9 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryPink,
-    secondary = PinkGrey40,
-    tertiary = Red40,
+    primary = PrimaryBlue,
+    secondary = BlueGrey40,
+    tertiary = Blue80,
     background = SurfaceLight,
     surface = CardLight,
     onPrimary = CardLight,
@@ -37,7 +37,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun GagyebuTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    primaryHex: String = "#FF6B8A",
+    primaryHex: String = "#3182F6",
     content: @Composable () -> Unit
 ) {
     val theme = ThemeOptions.find { it.hex == primaryHex } ?: ThemeOptions.first()

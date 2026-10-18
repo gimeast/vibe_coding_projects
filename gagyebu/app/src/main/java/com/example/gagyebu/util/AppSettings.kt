@@ -25,7 +25,7 @@ class AppSettings(private val context: Context) {
     private val THEME_COLOR = stringPreferencesKey("theme_color")
 
     val themeColor: Flow<String> = context.dataStore.data
-        .map { it[THEME_COLOR] ?: "#FF6B8A" }
+        .map { it[THEME_COLOR] ?: "#3182F6" }
 
     suspend fun setThemeColor(hex: String) {
         context.dataStore.edit { it[THEME_COLOR] = hex }

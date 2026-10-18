@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.gagyebu.data.db.DailyStat
 import com.example.gagyebu.data.db.GagyebuRepository
+import com.example.gagyebu.data.model.Category
 import com.example.gagyebu.data.model.Transaction
 import com.example.gagyebu.util.FormatUtil
 import java.io.File
@@ -21,6 +22,28 @@ class HomeViewModel(private val repository: GagyebuRepository) : ViewModel() {
 
     // 홈 탭 재클릭 시 오늘 날짜 리셋 이벤트
     val resetHomeEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    val allCategories: StateFlow<List<Category>> = repository.getAllCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _selectedCategoryId = MutableStateFlow<Long?>(null)
+    val selectedCategoryId: StateFlow<Long?> = _selectedCategoryId.asStateFlow()
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setSelectedCategoryId(categoryId: Long?) {
+        _selectedCategoryId.value = categoryId
+    }
+
+    fun clearFilters() {
+        _searchQuery.value = ""
+        _selectedCategoryId.value = null
+    }
 
     val transactions: StateFlow<List<Transaction>> = _currentMonth
         .flatMapLatest { ym ->
@@ -54,6 +77,7 @@ class HomeViewModel(private val repository: GagyebuRepository) : ViewModel() {
 
     fun resetToToday() {
         _currentMonth.value = YearMonth.now()
+        clearFilters()
         resetHomeEvent.tryEmit(Unit)
     }
 

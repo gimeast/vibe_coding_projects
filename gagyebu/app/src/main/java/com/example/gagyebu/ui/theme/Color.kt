@@ -3,33 +3,30 @@ package com.example.gagyebu.ui.theme
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// Primary Pink
-val Pink80 = Color(0xFFFFB3C1)
-val PinkGrey80 = Color(0xFFCCC2DC)
-val Red80 = Color(0xFFEFB8C8)
-
-val Pink40 = Color(0xFFFF6B8A)
-val PinkGrey40 = Color(0xFF9B6FA5)
-val Red40 = Color(0xFF7D5260)
+// Primary Blue (Modern Fintech)
+val Blue80 = Color(0xFF93C5FD)
+val BlueGrey80 = Color(0xFFCBD5E1)
+val Blue40 = Color(0xFF3182F6)
+val BlueGrey40 = Color(0xFF64748B)
 
 // App specific
-val PrimaryPink = Color(0xFFFF6B8A)
-val PrimaryPinkLight = Color(0xFFFFE4EC)
-val PrimaryPinkDark = Color(0xFFE53E6A)
+val PrimaryBlue = Color(0xFF3182F6)
+val PrimaryBlueLight = Color(0xFFEBF4FF)
+val PrimaryBlueDark = Color(0xFF1B64DA)
 val AccentOrange = Color(0xFFFF8C61)
 
-val IncomeGreen = Color(0xFF2EC4B6)
-val ExpenseRed = Color(0xFFFF6B8A)
+val IncomeGreen = Color(0xFF00B493)
+val ExpenseRed = Color(0xFFF04452)
 
-val SurfaceLight = Color(0xFFFAFAFA)
-val SurfaceDark = Color(0xFF1E1E2E)
+val SurfaceLight = Color(0xFFF8FAFC)
+val SurfaceDark = Color(0xFF0F172A)
 val CardLight = Color(0xFFFFFFFF)
-val CardDark = Color(0xFF2A2A3E)
+val CardDark = Color(0xFF1E293B)
 
-val TextPrimary = Color(0xFF1A1A2E)
-val TextSecondary = Color(0xFF888899)
-val TextPrimaryDark = Color(0xFFF0F0F8)
-val TextSecondaryDark = Color(0xFFAAAAAA)
+val TextPrimary = Color(0xFF0F172A)
+val TextSecondary = Color(0xFF64748B)
+val TextPrimaryDark = Color(0xFFF8FAFC)
+val TextSecondaryDark = Color(0xFF94A3B8)
 
 // 앱 테마 색상 ─ CompositionLocal로 전파
 data class AppColors(
@@ -39,13 +36,18 @@ data class AppColors(
 )
 
 val LocalAppColors = compositionLocalOf {
-    AppColors(Color(0xFFFF6B8A), Color(0xFFFFE4EC), Color(0xFFE53E6A))
+    AppColors(Color(0xFF3182F6), Color(0xFFEBF4FF), Color(0xFF1B64DA))
 }
 
 // 사용자 선택 가능한 테마 색상 목록
 data class AppColorTheme(val hex: String, val name: String, val primary: Color, val primaryLight: Color, val primaryDark: Color)
 
 val ThemeOptions = listOf(
+    // Modern Fintech
+    AppColorTheme("#3182F6", "모던블루",   Color(0xFF3182F6), Color(0xFFEBF4FF), Color(0xFF1B64DA)),
+    AppColorTheme("#10B981", "에메랄드",   Color(0xFF10B981), Color(0xFFD1FAE5), Color(0xFF047857)),
+    AppColorTheme("#6366F1", "인디고",     Color(0xFF6366F1), Color(0xFFEEF2FF), Color(0xFF4338CA)),
+    AppColorTheme("#1E293B", "슬레이트",   Color(0xFF1E293B), Color(0xFFE2E8F0), Color(0xFF0F172A)),
     // Soft / Romantic
     AppColorTheme("#F06292", "로즈",       Color(0xFFF06292), Color(0xFFFFE0EE), Color(0xFFC2185B)),
     AppColorTheme("#E8A598", "피치",       Color(0xFFE8A598), Color(0xFFFAECE9), Color(0xFFB5625A)),

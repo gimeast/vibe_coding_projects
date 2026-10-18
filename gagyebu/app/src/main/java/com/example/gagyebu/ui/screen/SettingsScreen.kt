@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.gagyebu.BuildConfig
 import com.example.gagyebu.R
 import com.example.gagyebu.ui.theme.*
 
@@ -69,7 +70,7 @@ fun SettingsScreen(
 
         // App info
         SettingsSection("앱 정보") {
-            SettingsInfoItem(icon = Icons.Default.Info, title = "버전", value = "1.0.0")
+            SettingsInfoItem(icon = Icons.Default.Info, title = "버전", value = BuildConfig.VERSION_NAME)
         }
 
         // Summary box at bottom
@@ -111,7 +112,7 @@ fun ThemeColorItem(currentHex: String, onColorSelected: (String) -> Unit) {
             Column {
                 Text("테마 색상", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                 Text(
-                    ThemeOptions.find { it.hex == currentHex }?.name ?: "핑크",
+                    ThemeOptions.find { it.hex == currentHex }?.name ?: "모던블루",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )

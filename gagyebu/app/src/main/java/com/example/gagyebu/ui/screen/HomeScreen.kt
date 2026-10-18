@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.gagyebu.data.model.Category
 import com.example.gagyebu.data.model.Transaction
 import com.example.gagyebu.data.model.TransactionType
 import com.example.gagyebu.ui.theme.*
@@ -50,6 +51,9 @@ fun HomeScreen(
     val monthlyIncome by viewModel.monthlyIncome.collectAsState()
     val monthlyExpense by viewModel.monthlyExpense.collectAsState()
     val dailyStats by viewModel.dailyStats.collectAsState()
+    val allCategories by viewModel.allCategories.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf<Transaction?>(null) }
     var showFab by remember { mutableStateOf(false) }
@@ -122,8 +126,8 @@ fun HomeScreen(
                     containerColor = LocalAppColors.current.primary,
                 ) {
                     Icon(
-                        if (showFab) Icons.Default.Close else Icons.Default.Add,
-                        "추가",
+                        if (showFab) Icons.Default.Close else Icons.Default.Edit,
+                        if (showFab) "닫기" else "작성",
                         tint = Color.White
                     )
                 }
@@ -136,11 +140,20 @@ fun HomeScreen(
         ) { page ->
             val pageMonth = baseMonth.plusMonths((page - centerPage).toLong())
 
-            val grouped = remember(transactions, selectedDate) {
-                val filtered = if (selectedDate != null)
-                    transactions.filter { it.date == FormatUtil.formatDate(selectedDate!!) }
-                else transactions
-                filtered.groupBy { it.date }
+            val filteredTransactions = remember(transactions, selectedDate, selectedCategoryId, searchQuery) {
+                transactions.filter { transaction ->
+                    val matchesDate = selectedDate == null || transaction.date == FormatUtil.formatDate(selectedDate!!)
+                    val matchesCategory = selectedCategoryId == null || transaction.categoryId == selectedCategoryId
+                    val query = searchQuery.trim()
+                    val matchesQuery = query.isEmpty() ||
+                        transaction.memo.contains(query, ignoreCase = true) ||
+                        transaction.categoryName.contains(query, ignoreCase = true)
+                    matchesDate && matchesCategory && matchesQuery
+                }
+            }
+
+            val grouped = remember(filteredTransactions) {
+                filteredTransactions.groupBy { it.date }
                     .toSortedMap(compareByDescending { it })
             }
 
@@ -170,6 +183,22 @@ fun HomeScreen(
                     )
                 }
 
+                item {
+                    HomeSearchAndFilterSection(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = viewModel::setSearchQuery,
+                        categories = allCategories,
+                        selectedCategoryId = selectedCategoryId,
+                        onCategorySelected = viewModel::setSelectedCategoryId,
+                        filteredCount = filteredTransactions.size,
+                        totalCount = transactions.size,
+                        onClearFilters = {
+                            viewModel.clearFilters()
+                            selectedDate = null
+                        }
+                    )
+                }
+
                 if (selectedDate != null) {
                     item {
                         Row(
@@ -191,7 +220,16 @@ fun HomeScreen(
                 }
 
                 if (grouped.isEmpty()) {
-                    item { EmptyState() }
+                    val isFiltered = searchQuery.isNotBlank() || selectedCategoryId != null || selectedDate != null
+                    item {
+                        EmptyState(
+                            isFiltered = isFiltered,
+                            onClearFilters = {
+                                viewModel.clearFilters()
+                                selectedDate = null
+                            }
+                        )
+                    }
                 } else {
                     grouped.forEach { (date, dayTransactions) ->
                         item {
@@ -584,25 +622,169 @@ fun TransactionItem(
 }
 
 @Composable
-fun EmptyState() {
+fun EmptyState(
+    isFiltered: Boolean = false,
+    onClearFilters: (() -> Unit)? = null
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("💸", fontSize = 48.sp)
+        Text(if (isFiltered) "🔍" else "💸", fontSize = 48.sp)
         Spacer(Modifier.height(12.dp))
         Text(
-            "기록된 내역이 없어요",
+            if (isFiltered) "일치하는 내역이 없어요" else "기록된 내역이 없어요",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            fontWeight = FontWeight.Medium
         )
         Text(
-            "+ 버튼을 눌러 추가하세요",
+            if (isFiltered) "카테고리나 메모 검색어를 변경해보세요" else "작성 버튼(✏️)을 눌러 내역을 추가해보세요",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
         )
+        if (isFiltered && onClearFilters != null) {
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(onClick = onClearFilters) {
+                Text("필터 초기화")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeSearchAndFilterSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    categories: List<Category>,
+    selectedCategoryId: Long?,
+    onCategorySelected: (Long?) -> Unit,
+    filteredCount: Int,
+    totalCount: Int,
+    onClearFilters: () -> Unit
+) {
+    val isFilterActive = searchQuery.isNotBlank() || selectedCategoryId != null
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        // 검색창 (메모 및 내용 검색)
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = "카테고리 또는 메모로 검색...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "검색",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "검색어 지우기",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = LocalAppColors.current.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // 카테고리 필터 칩 목록 (가로 스크롤)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // "전체" 칩
+            FilterChip(
+                selected = selectedCategoryId == null,
+                onClick = { onCategorySelected(null) },
+                label = { Text("전체") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = LocalAppColors.current.primary,
+                    selectedLabelColor = Color.White
+                )
+            )
+
+            // 각 카테고리 칩
+            categories.forEach { category ->
+                val isSelected = selectedCategoryId == category.id
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        onCategorySelected(if (isSelected) null else category.id)
+                    },
+                    label = { Text(category.name) },
+                    leadingIcon = {
+                        Text(
+                            category.icon.ifEmpty { getCategoryEmoji(category.name) },
+                            fontSize = 14.sp
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = LocalAppColors.current.primary,
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+        }
+
+        // 필터 활성화 시 결과 요약 및 초기화 링크
+        if (isFilterActive) {
+            Spacer(Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "검색 결과 ${filteredCount}건 (전체 ${totalCount}건)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalAppColors.current.primary,
+                    fontWeight = FontWeight.Medium
+                )
+                TextButton(
+                    onClick = onClearFilters,
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                ) {
+                    Text(
+                        "필터 초기화",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
     }
 }
 

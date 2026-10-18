@@ -48,7 +48,7 @@ val bottomTabs = listOf(BottomTab.Home, BottomTab.Calendar, BottomTab.Stats, Bot
 @Composable
 fun GagyebuApp(app: GagyebuApplication) {
     val isDarkMode by app.settings.isDarkMode.collectAsState(initial = false)
-    val themeColor by app.settings.themeColor.collectAsState(initial = "#FF6B8A")
+    val themeColor by app.settings.themeColor.collectAsState(initial = "#3182F6")
     val scope = rememberCoroutineScope()
 
     GagyebuTheme(darkTheme = isDarkMode, primaryHex = themeColor) {
