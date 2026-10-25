@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 철봉 -->
+    <path
+        android:fillColor="#FF7BE3A3"
+        android:pathData="M26,32 H82 A2.5,2.5 0 0 1 82,37 H26 A2.5,2.5 0 0 1 26,32 Z" />
+    <!-- 지지대 -->
+    <path
+        android:fillColor="#FF3D5A4A"
+        android:pathData="M26,24 h4 v10 h-4 Z M78,24 h4 v10 h-4 Z" />
+
+    <!-- 팔 -->
+    <path
+        android:strokeColor="#FFEAF3EE"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M42,36 L42,50" />
+    <path
+        android:strokeColor="#FFEAF3EE"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M66,36 L66,50" />
+
+    <!-- 머리 -->
+    <path
+        android:fillColor="#FFEAF3EE"
+        android:pathData="M54,44 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+
+    <!-- 몸통 -->
+    <path
+        android:fillColor="#FFEAF3EE"
+        android:pathData="M48,54 h12 a3,3 0 0 1 3,3 v18 a3,3 0 0 1 -3,3 h-12 a3,3 0 0 1 -3,-3 v-18 a3,3 0 0 1 3,-3 Z" />
+
+    <!-- 다리 -->
+    <path
+        android:strokeColor="#FFEAF3EE"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M50,78 L44,90" />
+    <path
+        android:strokeColor="#FFEAF3EE"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M58,78 L64,90" />
+</vector>

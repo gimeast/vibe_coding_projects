@@ -1,0 +1,17 @@
+# Build & Gradle
+build/
+app/build/
+.gradle/
+local.properties
+gradle.properties.local
+.kotlin/
+
+# Keystore & Signing
+*.keystore
+*.jks
+
+# IDE & OS
+.idea/
+*.iml
+.DS_Store
+dist/
