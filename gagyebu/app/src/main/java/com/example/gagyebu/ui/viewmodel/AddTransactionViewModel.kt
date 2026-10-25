@@ -34,6 +34,12 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
     private val _photoUri = MutableStateFlow("")
     val photoUri: StateFlow<String> = _photoUri.asStateFlow()
 
+    private val _isInstallment = MutableStateFlow(false)
+    val isInstallment: StateFlow<Boolean> = _isInstallment.asStateFlow()
+
+    private val _installmentMonths = MutableStateFlow(3)
+    val installmentMonths: StateFlow<Int> = _installmentMonths.asStateFlow()
+
     private val _continuousMode = MutableStateFlow(false)
     val continuousMode: StateFlow<Boolean> = _continuousMode.asStateFlow()
 
@@ -89,16 +95,26 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
             _date.value = LocalDate.now()
         }
         _continuousMode.value = false
+        _isInstallment.value = false
+        _installmentMonths.value = 3
         savedCountInternal = 0
     }
 
-    fun setType(t: TransactionType) { _type.value = t; _selectedCategory.value = null }
+    fun setType(t: TransactionType) {
+        _type.value = t
+        _selectedCategory.value = null
+        if (t == TransactionType.INCOME) {
+            _isInstallment.value = false
+        }
+    }
     fun setAmount(v: String) { _amount.value = v.filter { it.isDigit() } }
     fun setCategory(c: Category) { _selectedCategory.value = c }
     fun setMemo(v: String) { _memo.value = v }
     fun setPhotoUri(v: String) { _photoUri.value = v }
     fun setDate(d: LocalDate) { _date.value = d }
     fun clearError() { _errorMessage.value = null; _fieldError.value = null }
+    fun setIsInstallment(enabled: Boolean) { _isInstallment.value = enabled }
+    fun setInstallmentMonths(months: Int) { _installmentMonths.value = months.coerceIn(2, 12) }
 
     fun setContinuousMode(enabled: Boolean) {
         _continuousMode.value = enabled
@@ -120,34 +136,89 @@ class AddTransactionViewModel(private val repository: GagyebuRepository) : ViewM
             _scrollToField.tryEmit(FormField.CATEGORY)
             return
         }
+
+        val isInstallmentMode = _isInstallment.value && _type.value == TransactionType.EXPENSE && editingId == -1L
+
         viewModelScope.launch {
-            if (originalPhotoUri.isNotEmpty() && !originalPhotoUri.startsWith("content://") && originalPhotoUri != _photoUri.value) {
-                File(originalPhotoUri).delete()
-            }
-            val transaction = Transaction(
-                id = if (editingId != -1L) editingId else 0,
-                type = _type.value,
-                amount = amountLong,
-                categoryId = category.id,
-                categoryName = category.name,
-                categoryIcon = category.icon,
-                categoryColor = category.colorHex,
-                memo = _memo.value,
-                photoUri = _photoUri.value,
-                date = FormatUtil.formatDate(_date.value),
-                time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
-            )
-            repository.insertTransaction(transaction)
-            if (_continuousMode.value) {
-                _amount.value = ""
-                _selectedCategory.value = null
-                _memo.value = ""
-                _photoUri.value = ""
-                originalPhotoUri = ""
-                savedCountInternal++
-                _savedToast.tryEmit("${savedCountInternal}건 저장됨")
+            if (isInstallmentMode) {
+                val months = _installmentMonths.value.coerceIn(2, 12)
+                val baseAmount = amountLong / months
+                val remainder = amountLong % months
+                val originalMemo = _memo.value.trim()
+                val baseDate = _date.value
+                val currentTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+
+                for (i in 1..months) {
+                    val currentAmount = if (i == 1) baseAmount + remainder else baseAmount
+                    val currentDate = if (i == 1) {
+                        baseDate
+                    } else {
+                        baseDate.plusMonths((i - 1).toLong()).withDayOfMonth(1)
+                    }
+                    val currentMemo = if (originalMemo.isEmpty()) {
+                        "할부 ${i}/${months}"
+                    } else {
+                        "$originalMemo ${i}/${months}"
+                    }
+                    val currentPhoto = if (i == 1) _photoUri.value else ""
+
+                    val transaction = Transaction(
+                        id = 0,
+                        type = TransactionType.EXPENSE,
+                        amount = currentAmount,
+                        categoryId = category.id,
+                        categoryName = category.name,
+                        categoryIcon = category.icon,
+                        categoryColor = category.colorHex,
+                        memo = currentMemo,
+                        photoUri = currentPhoto,
+                        date = FormatUtil.formatDate(currentDate),
+                        time = currentTime
+                    )
+                    repository.insertTransaction(transaction)
+                }
+
+                if (_continuousMode.value) {
+                    _amount.value = ""
+                    _selectedCategory.value = null
+                    _memo.value = ""
+                    _photoUri.value = ""
+                    originalPhotoUri = ""
+                    _isInstallment.value = false
+                    savedCountInternal++
+                    _savedToast.tryEmit("할부 ${months}개월 등록됨")
+                } else {
+                    _saveSuccess.emit(Unit)
+                }
             } else {
-                _saveSuccess.emit(Unit)
+                if (originalPhotoUri.isNotEmpty() && !originalPhotoUri.startsWith("content://") && originalPhotoUri != _photoUri.value) {
+                    File(originalPhotoUri).delete()
+                }
+                val transaction = Transaction(
+                    id = if (editingId != -1L) editingId else 0,
+                    type = _type.value,
+                    amount = amountLong,
+                    categoryId = category.id,
+                    categoryName = category.name,
+                    categoryIcon = category.icon,
+                    categoryColor = category.colorHex,
+                    memo = _memo.value,
+                    photoUri = _photoUri.value,
+                    date = FormatUtil.formatDate(_date.value),
+                    time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+                )
+                repository.insertTransaction(transaction)
+                if (_continuousMode.value) {
+                    _amount.value = ""
+                    _selectedCategory.value = null
+                    _memo.value = ""
+                    _photoUri.value = ""
+                    originalPhotoUri = ""
+                    savedCountInternal++
+                    _savedToast.tryEmit("${savedCountInternal}건 저장됨")
+                } else {
+                    _saveSuccess.emit(Unit)
+                }
             }
         }
     }

@@ -77,6 +77,8 @@ fun AddTransactionScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val fieldError by viewModel.fieldError.collectAsState()
     val continuousMode by viewModel.continuousMode.collectAsState()
+    val isInstallment by viewModel.isInstallment.collectAsState()
+    val installmentMonths by viewModel.installmentMonths.collectAsState()
 
     val amountBivr = remember { BringIntoViewRequester() }
     val categoryBivr = remember { BringIntoViewRequester() }
@@ -256,6 +258,114 @@ fun AddTransactionScreen(
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+            }
+
+            // Installment (Only for new EXPENSE transactions)
+            if (type == TransactionType.EXPENSE && transactionId == -1L) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    "할부 결제",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    if (isInstallment) "${installmentMonths}개월 분할 등록" else "일시불",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isInstallment) LocalAppColors.current.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                            Switch(
+                                checked = isInstallment,
+                                onCheckedChange = viewModel::setIsInstallment,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = LocalAppColors.current.primary
+                                )
+                            )
+                        }
+
+                        AnimatedVisibility(visible = isInstallment) {
+                            Column(modifier = Modifier.padding(top = 12.dp)) {
+                                Text(
+                                    "할부 개월 수",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    (2..12).forEach { m ->
+                                        val isSelected = installmentMonths == m
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { viewModel.setInstallmentMonths(m) },
+                                            label = { Text("${m}개월") },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = LocalAppColors.current.primary,
+                                                selectedLabelColor = Color.White
+                                            )
+                                        )
+                                    }
+                                }
+
+                                val totalLong = amount.toLongOrNull() ?: 0L
+                                if (totalLong > 0) {
+                                    val base = totalLong / installmentMonths
+                                    val rem = totalLong % installmentMonths
+                                    Spacer(Modifier.height(12.dp))
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = LocalAppColors.current.primaryLight)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                "매월 약 ${FormatUtil.formatAmount(base)}원씩 ${installmentMonths}회 등록",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = LocalAppColors.current.primaryDark
+                                            )
+                                            Text(
+                                                "• 1회차: ${FormatUtil.formatAmount(base + rem)}원 (${FormatUtil.formatDate(date)})",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = LocalAppColors.current.primaryDark.copy(alpha = 0.8f)
+                                            )
+                                            Text(
+                                                "• 2~${installmentMonths}회차: 매월 1일 ${FormatUtil.formatAmount(base)}원씩 자동 등록",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = LocalAppColors.current.primaryDark.copy(alpha = 0.8f)
+                                            )
+                                            Text(
+                                                "• 메모: \"${memo.ifBlank { "할부" }} 1/${installmentMonths}\" ~ \"${memo.ifBlank { "할부" }} ${installmentMonths}/${installmentMonths}\"",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = LocalAppColors.current.primaryDark.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
