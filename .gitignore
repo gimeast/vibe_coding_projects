@@ -1,39 +1,57 @@
-# Claude Code local files
+# Claude / AI Assistant local files
 **/CLAUDE.local.md
 **/.claude/settings.local.json
+**/.superpowers/
 
-# Build outputs
-/build/
-app/build/
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# IDE & Editor files
+**/.idea/
+**/.vscode/
+**/*.iml
+**/*.iws
+**/*.ipr
+
+# Gradle & Build outputs
 **/build/
-
-# Gradle
-.gradle/
 **/.gradle/
-local.properties
-gradle.properties.local
-
-# IDE
-.idea/
-*.iml
-*.iws
-*.ipr
+**/local.properties
+**/gradle.properties.local
 
 # Android
-*.apk
-*.aab
-*.ap_
-*.dex
-*.class
+**/*.apk
+**/*.aab
+**/*.ap_
+**/*.dex
+**/*.class
+**/gen/
+**/generated/
+**/.kotlin/
+**/captures/
 
-# Generated
-gen/
-generated/
+# Keystore & Signing
+**/*.jks
+**/*.keystore
 
-# Keystore
-*.jks
-*.keystore
+# Swift / macOS
+**/.build/
+**/dist/
+**/.swiftpm/
+**/Package.resolved
 
-# OS
-.DS_Store
-Thumbs.db
+# Node.js / Web
+**/node_modules/
+**/.env
+**/.env.local
+**/.env.*.local
+**/reports/*.pdf
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+*$py.class
